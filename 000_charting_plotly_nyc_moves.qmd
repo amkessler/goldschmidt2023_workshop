@@ -1,0 +1,404 @@
+---
+title: "Advanced Charting Using Plotly"
+author: "Aaron Kessler"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+format:
+  html:
+    self-contained: true
+    toc: true
+    toc-location: left
+    theme: yeti
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(lubridate)
+library(readxl)
+library(janitor)
+library(RColorBrewer)
+library(plotly)
+library(tidyquant)
+options(dplyr.summarise.inform = FALSE)
+options(scipen = 999)
+
+#load prepared data of moves by zip code
+net_flows_usps_zips_NYC <- readRDS("data/net_flows_usps_zips_NYC.rds")
+
+
+```
+
+## NYC Covid Net Moves By Zipcode
+
+Next let's examine the net inflow-outlow aggregate dataset sourced from USPS and augmented by zip code
+and borough descriptive information.
+
+```{r}
+
+head(net_flows_usps_zips_NYC, 20)
+
+```
+
+
+```{r}
+#grand totals per covid vs. not
+net_flows_usps_zips_NYC %>% 
+  group_by(covid_flag) %>% 
+  summarise(total_out = sum(total_from_zip, na.rm = TRUE), 
+            total_in = sum(total_to_zip, na.rm = TRUE),
+            total_net_gain = sum(total_net_gain, na.rm = TRUE))
+
+```
+
+Let's look at that by borough.
+
+```{r}
+#compare by BOROUGH
+net_flows_usps_zips_NYC %>% 
+  group_by(borough, covid_flag) %>% 
+  summarise(total_out = sum(total_from_zip, na.rm = TRUE), 
+            total_in = sum(total_to_zip, na.rm = TRUE),
+            total_net_gain = sum(total_net_gain, na.rm = TRUE)) 
+
+```
+
+Let's look at it through the lens of time and money.
+
+<br>
+
+### Net flows by month
+
+We can see the enormous exodus that happened in March 2020 and the subsequent months, with a rebound as the year progressed.
+
+The city was still losing more people on a net basis, but the gradually less than before.
+
+```{r}
+net_flows_NYC_monthly <- net_flows_usps_zips_NYC %>% 
+  group_by(datemonth, covid_flag) %>% 
+  summarise(total_net_gain = sum(total_net_gain, na.rm = TRUE))
+
+head(net_flows_NYC_monthly)
+
+```
+
+```{r, message=FALSE, warning=FALSE}
+fig <- plot_ly(data= net_flows_NYC_monthly, x = ~datemonth, y = ~total_net_gain, name = 'Moves', 
+               type = 'scatter', mode = 'bars',
+               line = list(color = 'darkred', width = 3))
+
+fig
+```
+
+
+```{r, message=FALSE, warning=FALSE}
+fig <- fig %>% layout(title = "Net number of household moves from all NYC zip codes",
+         xaxis = list(title = "Months"),
+         yaxis = list (title = "Net gain/loss in Moves"))
+
+fig
+```
+
+
+```{r, message=FALSE, warning=FALSE}
+fig <- fig %>% 
+  config(displayModeBar = FALSE)
+
+fig
+
+```
+
+### Net flows by month and zip
+
+What does that look like for each zip code individually throughout the city?
+
+```{r}
+net_flows_monthly_byzip <- net_flows_usps_zips_NYC %>% 
+  group_by(datemonth, zipcode) %>% 
+  summarise(total_net_gain = sum(total_net_gain, na.rm = TRUE))
+
+net_flows_monthly_byzip
+```
+
+
+```{r}
+#create plotly chart object
+all_zips_plotlychart <- net_flows_monthly_byzip %>%
+  group_by(zipcode) %>%
+  plot_ly(x = ~datemonth, y = ~total_net_gain) %>%
+  add_lines(
+    name = "NYC Zips", 
+    line = list(width = 1.33), 
+    alpha = 0.2, 
+    hoverinfo = "none"
+  ) %>%
+  ungroup()
+
+all_zips_plotlychart
+
+```
+
+add titles and axis labels
+```{r}
+all_zips_plotlychart <- all_zips_plotlychart %>% 
+  layout(title = "Net gain/loss of NYC moves by zip code",
+         xaxis = list(title = "Month"),
+         yaxis = list (title = "Net gain/loss of households")) %>% 
+  config(displayModeBar = FALSE)
+
+all_zips_plotlychart 
+
+```
+
+That's a little hard to decipher on its own.
+Let's look at the where the ***highest-income zips in the city*** are themselves in that hairball.
+
+```{r}
+### join IRS data back in to pull together wealth measures from AGI
+irs_zips_agi_grouped <- readRDS("data/irs_zips_agi_grouped.rds")
+
+netflows_by_zip_withagi <- net_flows_usps_zips_NYC %>% 
+  group_by(zipcode) %>% 
+  summarise(total_net_gain = sum(total_net_gain, na.rm = TRUE)) %>% 
+  left_join(irs_zips_agi_grouped, by = "zipcode") 
+
+
+```
+
+
+```{r}
+# # highlight one zip
+# all_zips_plotlychart %>%
+#   filter(zipcode == "10011") %>%
+#   add_lines(name = "10011")
+
+
+# create function to handle multiple zips fed to plotly object at once
+# we'll use this to highlight
+zip_layer <- function(plot_obj, zip_name) {
+  plot_obj %>%
+    filter(zipcode == zip_name) %>%
+    add_lines(name = zip_name)
+}
+
+all_zips_plotlychart %>% 
+  add_fun(zip_layer, zip_name = "10022")
+```
+
+
+```{r}
+#highest income zips
+all_zips_plotlychart %>%
+  add_fun(zip_layer, zip_name = "10005") %>%
+  add_fun(zip_layer, zip_name = "10007") %>%
+  add_fun(zip_layer, zip_name = "10282") %>% 
+  add_fun(zip_layer, zip_name = "10022") %>%
+  add_fun(zip_layer, zip_name = "10069") %>% #
+  add_fun(zip_layer, zip_name = "10013") 
+```
+
+Now let's look at the ***lowest-income zip codes in the city***, many clustered in the Bronx, to see how they've fared.
+
+In this case, it appears the poorest zips barely changed at all during the Covid era.
+
+```{r}
+
+#lowest income zips
+all_zips_plotlychart %>%
+  add_fun(zip_layer, zip_name = "10452") %>%
+  add_fun(zip_layer, zip_name = "10453") %>%
+  add_fun(zip_layer, zip_name = "10454") %>% 
+  add_fun(zip_layer, zip_name = "10456") %>%
+  add_fun(zip_layer, zip_name = "10457") %>% 
+  add_fun(zip_layer, zip_name = "10455") 
+
+
+
+```
+<br>
+
+
+## Applying to stock market financial data
+
+We'll use tidyquant once again to pull closing prices on a number of companies
+
+One stock first
+
+```{r}
+
+onestock  <- tq_get("MSFT", 
+                    get = "stock.prices", 
+                    from = "2020-01-01")
+onestock
+
+
+```
+
+One stock
+
+```{r}
+
+fig <- plot_ly(data = onestock, x = ~date, y = ~close, name = 'Closing Price', 
+               type = 'scatter', mode = 'bars',
+               line = list(color = 'darkred', width = 2))
+
+fig
+
+```
+
+Now multiple stocks. We can select multiple companies by ticker like this...
+
+```{r}
+stocks <- tq_get(c("AAPL", "MSFT", "NYT", "XOM"), 
+                       get = "stock.prices", 
+                       from = "2020-01-01")
+stocks 
+
+stocks %>%
+  count(symbol)
+```
+Or we can even get the closing price of every stock within an index at once, 
+like for the Dow.
+Here for this example we'll just grab a sample of the companies, but you could get them all if you wanted.
+```{r}
+
+stocks <- tq_index("DOW") %>%
+    slice(1:50) %>%
+    tq_get(get = "stock.prices",
+           from = "2020-01-01")
+
+
+stocks %>%
+  count(symbol)
+```
+
+
+
+Let's modify our data to be monthly instead, based on the last closing price of the month.   
+
+```{r}
+
+stocks_monthly <- stocks %>%
+    group_by(symbol) %>%
+    tq_transmute(select = close, mutate_fun = to.monthly, indexAt = "lastof")
+
+stocks_monthly
+
+```
+
+
+```{r}
+
+#create plotly chart object
+stocks_plotlychart <- stocks_monthly %>%
+  group_by(symbol) %>%
+  plot_ly(x = ~date, y = ~close) %>%
+  add_lines(
+    name = "company tickers", 
+    line = list(width = 1.33), 
+    alpha = 0.2, 
+    hoverinfo = "none"
+  ) %>%
+  ungroup()
+
+stocks_plotlychart
+
+```
+
+Now of course above we're charting the prices, but that doesn't really work for comparing vary 
+well since the stocks are all on different scales.
+
+So let's find a way to get some apples-to-apples measure here instead to better evaluate.
+
+Let's use tidyquant to instead calculate the monthly return for each of companies.
+
+```{r}
+
+# calculate monthly return of multiple stocks
+stocks_monthlyreturns <- stocks %>%
+  group_by(symbol) %>%
+  tq_transmute(select=adjusted,
+               mutate_fun=periodReturn,
+               period="monthly",
+               col_rename = "monthly_return")
+
+stocks_monthlyreturns
+
+```
+
+
+
+```{r}
+
+#create plotly chart object
+monthlyreturns_plotlychart <- stocks_monthlyreturns %>%
+  group_by(symbol) %>%
+  plot_ly(x = ~date, y = ~monthly_return) %>%
+  add_lines(
+    name = "companies", 
+    line = list(width = 1.33), 
+    alpha = 0.2,
+    hoverinfo = "none"
+  ) %>%
+  ungroup()
+
+monthlyreturns_plotlychart
+
+
+```
+
+Let's create a function again to highlight.
+
+
+```{r}
+
+# create function to handle multiple stocks fed to plotly object at once
+# we'll use this to highlight
+stock_layer <- function(plot_obj, stock_symbol) {
+  plot_obj %>%
+    filter(symbol == stock_symbol) %>%
+    add_lines(name = stock_symbol)
+}
+
+#highlight Boeing (BA)
+monthlyreturns_plotlychart %>% 
+  add_fun(stock_layer, stock_symbol = "BA")
+```
+
+Where might we go with a story from there, about Boeing's swings in performance...
+
+
+
+```{r}
+
+
+
+```
+
+
+
+
+
+```{r}
+
+
+
+```
+
+
+
+
+
+```{r}
+
+
+
+```
+
+
+
+
+
+
+
+
