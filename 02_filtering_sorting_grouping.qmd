@@ -282,7 +282,7 @@ Now that we have our data, let's use some filtering and sorting to answer some q
 
 ```{r}
 
-stock_data %>% 
+microsoft_dailyprices %>% 
   arrange(desc(close)) %>% 
   head(5)
 
@@ -292,7 +292,7 @@ stock_data %>%
 
 ```{r}
 
-stock_data %>% 
+microsoft_dailyprices %>% 
   arrange(close) %>% 
   head(5)
 
@@ -302,7 +302,7 @@ stock_data %>%
 
 ```{r}
 
-stock_data %>% 
+microsoft_dailyprices %>% 
   filter(close == max(close))
 
 ```
@@ -311,7 +311,7 @@ stock_data %>%
 
 ```{r}
 
-stock_data %>% 
+microsoft_dailyprices %>% 
   filter(close == min(close))
 
 ```
@@ -320,7 +320,7 @@ stock_data %>%
 
 ```{r}
 
-stock_data %>% 
+microsoft_dailyprices %>% 
   filter(date == max(date))
 
 ```
