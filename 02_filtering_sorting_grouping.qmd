@@ -1,0 +1,507 @@
+---
+title: "Filtering, Sorting and Grouping Data"
+author: "Aaron Kessler"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+format:
+  html:
+    self-contained: true
+    toc: true
+    toc-location: left
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Load the packages we'll need
+# Remember, think of this like packing for our trip
+library(tidyverse)
+library(tidyquant)
+library(writexl)
+library(nycflights13)
+
+```
+
+## Using tables in R
+
+In R, data tables are known as dataframes.
+
+What are "tibbles"...?
+
+They're dataframes, with some additional tidyverse-infused features. Returns more readable output in the console, etc.
+
+## Looking at some data - NY flights
+
+We'll begin with a sample dataset on flights in and out of NYC's three airports in 2013 - included in the package we loaded above.
+
+```{r}
+
+flightdata <- nycflights13::flights
+
+flightdata
+
+```
+
+What's with that arrow? Let's explain.
+
+It's how you "assign" a stored value in R. How you save something with a name of your choosing, instead of just spit it out to the current window itself in the R session.
+
+You saw above that if we want to see a dataframe/tibble, we can feed R just its name and it gets returned - the whole thing, so to speak.
+
+We can also return just the few rows using `head()`.
+
+```{r}
+
+head(flightdata)
+
+```
+
+We can also see a vertical list of all the columns using `glimpse()`.
+
+```{r}
+
+glimpse(flightdata)
+
+```
+
+## Filtering and Sorting
+
+There's a lot of flight here. So let's talk about how we can use tidyverse functions to filter and sort our data, just like you may be used to in other tools like Excel, SQL or other methods.
+
+Let's say I only want to see flights that were going to Sarasota, Florida (SRQ).
+
+```{r}
+ 
+filter(flightdata, dest == "SRQ")
+
+```
+
+Why the double-equal-sign? Let's talk about it.
+
+For numeric values, you can also use boolean operators.
+
+```{r}
+
+filter(flightdata, month <= 3)
+
+```
+
+Wow, that's still a lot of stuff - that's because we're showing *all* flights in the entire table that were in the first quarter of 2013.
+
+But wait, didn't we just tell R before that we wanted *only the ones from Sarasota*? What gives.
+
+That's because in R, you're never actually changing the original table, unless you explicitly "save" it as a new object. So since our filter above only told R to filter by month, that's what it did.
+
+Now, let's actually filter by more than one thing at a time, so we can capture both our restrictions at once.
+
+```{r}
+
+filter(flightdata, dest == "SRQ", month <= 3)
+#note the comma separating the filtering terms
+
+```
+
+There we go.
+
+But there's an even better way to write this out...
+
+### Why I stopped worrying and learned to love the "pipe"
+
+This can still get a little confusing once you wind up with larger amounts of steps to string together.
+
+Enter a glorious feature of the tidyverse: the PIPE. It looks like this `%>%`
+
+The "pipe" (shortcut is CTRL/CMD + SHIFT + M) allows you to chain together commands, in a way that can be more intuitive for how humans thing through each step we're trying to do.
+
+```{r}
+
+flightdata %>% 
+  filter(dest == "SRQ")
+
+```
+
+Voila! So what just happened there?
+
+Think of `%>%` as the equivalent of *"and then do this"*...
+
+It takes the result and applies something new to it, in sequential order. This becomes easier to actually see when we add new functions to the chain- so let's talk about *sorting* our data with `arrange()`
+
+```{r}
+
+flightdata %>% 
+  arrange(dep_delay)
+
+```
+
+To sort by highest value, add `desc()` - for descending order.
+
+```{r}
+
+flightdata %>% 
+  arrange(desc(dep_delay))
+
+```
+
+Ok, so now that we know how to sort things, let's use the pipe to chain together all of the steps...and see what it looks like:
+
+```{r}
+
+flightdata %>% 
+  filter(dest == "SRQ", month <= 3) %>% 
+  arrange(desc(dep_delay))
+
+```
+
+Bingo, now we have the flights only to Sarasota, in the first quarter of the year, ordered by which flights had the longest delays in their departures.
+
+Think about what we just did here. You can read the code out loud, and it intuitively makes sense.
+
+To see the difference, this is how you would have written the same request to R without the pipe:
+
+```{r}
+
+arrange(filter(flightdata, dest == "SRQ", month <= 3), desc(dep_delay))
+
+```
+
+It's almost like you have to think backwards. But this is actually how many programming languages work, where you have to structure (and read) things almost inside-out. And the example above is still relatively simple...imagine what starts happening when you add all kinds of other steps to the mix.
+
+It can become very difficult to think through the steps when you're writing what you want when you have to think inside-out rather than sequentially. What's more, it can be very difficult for other people to read your code - not to mention harder for you to read your own code later on..!
+
+## Limiting to only certain columns
+
+One more thing - what if we don't want all the columns? Just some of them. That flight dataset has a whole bunch of stuff, and maybe we don't need it all depending on our particular goal for an analysis.
+
+This happens all the time.
+
+It's also frequently the case where you'd like to change the order of columns of your choosing.
+
+Dplyr makes this all easy using the `select()` function. Let's take a look...
+
+```{r}
+
+flightdata  %>% 
+  select(carrier, flight, origin, dest, month, day, sched_dep_time, dep_delay)
+
+```
+
+You can also do the reverse, where you tell it which columns you'd *don't* want.
+
+```{r}
+# You can pull out just certain variables as well  
+# This results in the same thing as above
+
+flightdata %>% 
+  select(-year)
+
+```
+
+Let's put all this together now, and use it to isolate our Sarasota flights.
+
+```{r}
+
+flightdata %>% 
+  filter(dest == "SRQ", month <= 3) %>% 
+  select(carrier, flight, origin, dest, 
+         month, day, sched_dep_time, dep_delay)
+
+```
+
+Perfect.
+
+Now remember of course, R is only doing what we're asking here: it's returning the slice of the data we've asked for...but it hasn't saved it anywhere.
+
+So if our goal was to focus in on just these first-quarter Sarasota flights from New York, we might want to save the results in a new dataframe object. Let's do that.
+
+```{r}
+
+srqflights <- flightdata %>% 
+  filter(dest == "SRQ", month <= 3) %>% 
+  select(carrier, flight, origin, dest, 
+         month, day, sched_dep_time, dep_delay)
+
+```
+
+Did it work? It did. Look at the upper right environment box.
+
+Why don't we actually see anything show up below? We didn't ask R to actually show us anything that we saved. We can do that by, again, simply using the name of our new dataframe.
+
+```{r}
+
+srqflights
+
+```
+
+There we go.
+
+## Saving data to a file
+
+Now a key point to remember here is that we've now saved our Sarasota flight data to our R session. And any time we come back later and run this set of steps in the script, we can isolate Sarasota in a similar way.
+
+But -- this doesn't mean we've actually saved the data to a *file*. Which is cool, as sometimes (many times really) we might not need or want to do that.
+
+However, if we do...let's say to use this data later in another script, or to share what we found with others, we need to get the new dataset out of R and into a file saved to our computer itself.
+
+So how do we do *that*?
+
+```{r}
+#special R binary format
+saveRDS(srqflights, "data/sarasota_q1_flights.rds")
+
+```
+
+We can also save to a whole host of other file formats, some of which you may have heard of, and other not. Let's pick one that you have: Excel.
+
+Saving to Excel is as simple as the following using the `writexl` package...
+
+```{r}
+
+write_xlsx(srqflights, "data/sarasota_q1_flights.xlsx")
+
+```
+
+Now that we've saved our New York to Sarasota flights as a file, we'll use that file a little later.
+
+<br>
+
+
+
+## Financial Data - More Sorting and Filtering
+
+We'll now use the filtering skills we've been learning and apply it to some financial data (we'll discuss how to 
+gather such data live off the web in the next module.)
+
+```{r}
+
+microsoft_dailyprices <- readRDS("data/stock_data_msft.rds")
+
+```
+
+Now that we have our data, let's use some filtering and sorting to answer some questions.
+
+-   What were the five highest closing prices for the company since the start of 2022?
+
+```{r}
+
+stock_data %>% 
+  arrange(desc(close)) %>% 
+  head(5)
+
+```
+
+-   How about the five lowest?
+
+```{r}
+
+stock_data %>% 
+  arrange(close) %>% 
+  head(5)
+
+```
+
+-   Could we use filtering to isolate the highest price, without relying on sorting it like above? Let's take a look:
+
+```{r}
+
+stock_data %>% 
+  filter(close == max(close))
+
+```
+
+-   Now let's do the same, this time for the lowest, or minimum price?
+
+```{r}
+
+stock_data %>% 
+  filter(close == min(close))
+
+```
+
+-   Can we use a similar strategy to show us the most recent date available in our price dataset?
+
+```{r}
+
+stock_data %>% 
+  filter(date == max(date))
+
+```
+
+You may be asking yourself, what if we wanted to calculate aggregate measures, like the average or median? 
+What if I want to group things together in all sorts of ways?
+
+
+<br>
+
+## Grouping and Aggregates - Flights to SRQ
+
+One of the most powerful things we can do when exploring analysis in R is to aggregate our data using `group_by()` and `summarise()`. This works kind of like pivot tables in Excel...only with significantly more power.
+
+First, let's return to the the New York-to-Sarasota flight data we created earlier in this script. 
+It contained all the flights from NYC's three airports to Sarasota during the first quarter of 2013.
+
+
+```{r}
+
+srqflights 
+
+```
+
+Let's say we do indeed want to escape for the sunny beaches of Sarasota, and for this example we'll assume that 
+flights in the past still exist now.
+
+We'd like to try and use our data to ask a few questions: how many flight routes are there in the first place? 
+And what are the most reliable ones we might want to choose so we don't get stuck cooling our heels at the airport 
+instead of being beach-bound on time.
+
+### Counting
+
+Rather than each daily flight listed separately, let's see how many exist and count them up 
+to give us a more high-level picture of our options.
+
+First, how many fly from each NYC airport?
+
+```{r}
+
+srqflights %>% 
+  group_by(origin) %>% 
+  summarise(n()) 
+
+
+```
+
+Well that's helpful to know to begin with - there are no Newark options, so we're either going to use JFK or LaGuardia to get there.
+
+We can also group by more than one factor, so let's look at each carrier's options from those airports.
+
+```{r}
+
+srqflights %>% 
+  group_by(carrier, flight, origin) %>% 
+  summarise(n())
+
+```
+
+Ok, now we're getting somewhere - we've gone from having hundreds of daily listings in our original data, to now revealing how many distinct flight routes fly to Sarasota. We can see these six flights are our options to explore, three from Delta (DL) and three from JetBlue (B6).
+
+Now one thing we'll want to get in the habit of doing, because it makes future analysis much easier, is give our new aggregate column a name of our own. The default is a little messy and causing heartburn if we want to operate on it later.
+
+So let's do that simply by using the `=` (single this time, note) to assign a name of our choosing.
+
+```{r}
+
+srqflights %>% 
+  group_by(carrier, flight, origin) %>% 
+  summarise(count = n())
+
+```
+
+That's better.
+
+Now remember our original goal of wanting to travel in January? We can chain together these group by operations with our filtering as well, simply by adding that to the mix.
+
+```{r}
+
+srqflights %>% 
+  filter(month == 1) %>% 
+  group_by(carrier, flight, origin) %>% 
+  summarise(count = n())
+
+```
+
+We can see there four distinct flights flying to Sarasota in January, and while most have daily departures, though one JetBlue flight does not.
+
+Because this "counting" is so common, there's actually a shortcut function that combines
+the both the group_by() and summarise() into one.
+
+```{r}
+
+srqflights %>% 
+  filter(month == 1) %>% 
+  count(carrier, flight, origin)
+
+```
+
+
+### Averaging
+
+Can we do something other than just counting them? Yes, indeed.
+
+Let's ask a question: of our four options here, which one on average has the best on-time departure in January.
+
+We can answer that by instead of counting, using another function withing `summarise`, which is asking for the `mean`. To do that, we tell R the name of the column we want to calculate the average on, in this case `dep_delay`.
+
+```{r}
+
+srqflights %>% 
+  filter(month == 1) %>% 
+  group_by(carrier, flight, origin) %>% 
+  summarise(avg_delay = mean(dep_delay))
+
+
+```
+
+In a millisecond, our code has done the calculations and given us the average number of minutes the January flights were delayed.
+
+We already see quite a difference with one of the flights compared with the others. But there's also one missing? What's happening there?
+
+That's because by default, R doesn't handle blank entries well for averaging - if there are blanks, it'll just return an NA instead. And remember that we had that one flight which indeed didn't have daily departures each day like the others.
+
+So we can easily handle that by adding an argument to calculate the average regardless of whether different flights have different numbers of rows.
+
+```{r}
+
+srqflights %>% 
+  filter(month == 1) %>% 
+  group_by(carrier, flight, origin) %>% 
+  summarise(avg_delay = mean(dep_delay, na.rm = TRUE))
+
+```
+
+Perfect, now we've got them all in there.
+
+If we're planning our trip, we can see that one JetBlue flight was consistently worse in January. So maybe we want to cross that one off our list.
+
+The best performer was the Delta flight out of LGA.
+
+### Iterating and re-purposing our code
+
+The great thing about a programming language such as R, is that once you've figured out the initial code to give you what you want, it's super easy to make changes and iterate on different possibilities. You don't have to start from scratch each time, and you can follow where your mind takes you...
+
+Let's say for example, ok, we now know the best on-time flight in January. What if we wanted to expand to look at the entire dataset of all three months of the first quarter? All we'd have to do is this.
+
+```{r}
+
+srqflights %>% 
+  group_by(carrier, flight, origin) %>% 
+  summarise(avg_delay = mean(dep_delay, na.rm = TRUE))
+
+```
+
+And just like that, we have the average delays for all six flights in the quarter.
+
+Similarly, maybe we want to see how each airline stacks up against the other, regardless of their individual flights. How does Delta and JetBlue compare overall. We can make a small tweak and have our answer.
+
+```{r}
+
+srqflights %>% 
+  group_by(carrier) %>% 
+  summarise(avg_delay = mean(dep_delay, na.rm = TRUE))
+
+```
+
+If we wanted to compare the two airports themselves? A similarly easy change to get that for us as well.
+
+```{r}
+
+srqflights %>% 
+  group_by(origin) %>% 
+  summarise(avg_delay = mean(dep_delay, na.rm = TRUE))
+```
+
+We now have a lot more information at our fingertips than we did a few minutes ago about how our various choices compare. And the sky's the limit (no pun intended) for what you can do to do analysis in such a fashion.  
+  
+With some of those data concepts in hand, let's take a look at gathering and visualizing
+financial data specifically in the next module.
+
+
+
+

@@ -1,0 +1,101 @@
+---
+title: "My First Quarto Document"
+author: "Aaron Kessler"
+date: "2/27/2023"
+format:
+  html:
+    self-contained: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse) 
+library(lubridate)
+library(janitor)
+
+```
+
+### What is Quarto?
+
+Text shows up here. You can type whatever you want...
+
+You can also do things like **bold some text** or *italicize* it. All kinds of other formatting things to play with too.
+
+# Header 1
+
+## Header 2
+
+### Header 3
+
+Links - use a url or hyperlink to a phrase:
+
+https://www.gwu.edu/
+
+Look at my site [here](https://www.gwu.edu/).
+
+## Actually using R code
+
+This is kind of important, right? Where do we put the R code itself?\
+In what are called **chunks**. Like this:
+
+```{r}
+
+head(txhousing)
+
+```
+
+How do I make one of those? Either go to Insert -\> R... or just CTRL/CMD + SHIFT + I
+
+Let's try it...
+
+```{r}
+
+
+```
+
+So everything you put in the R chunk gets run as R code. This is essentially the reverse of what happens in a regular R file -- where everything is code, and you comment out (#) the stuff that's explanatory text.
+
+Here, the reverse is happening: everything is explanatory text unless otherwise specified, and the R code goes in the chunks.
+
+#### "In-line" R snippets
+
+There's also one more option, which is you can embed a little bit of R code *within* your text. Like this:
+
+There were `r nrow(iris)` flowers in the iris dataset.
+
+## Rendering
+
+What is "rendering"...? Let's talk about it.
+
+It's the secret power that turns your R code and narrative notations into actual documents - from html pages, to pdfs, to entire websites, or even books.
+
+For now, we'll stick with creating an html web page from our content. Let's see how that works, by hitting the "Render" button above.
+
+## Finally - publishing options through the "YAML"
+
+When it comes to how are file are published (i.e. rendered), we have a bunch of different options that can help us with certain types of circumstances.
+
+Let's look at a couple of them:
+
+    format:
+      html:
+        toc: true
+        toc-location: left
+
+What do the these *do*..? Let's try one at a time above.
+
+Then one more trick -- remember our date at the top?
+
+    date: "2/7/2023"
+
+That's fine if we only have one date we want to ever put on there. But let's say we want it to be the date we published our file. We'd have to keep manually changing it each time.\
+Or would we?
+
+You can actually put R code directly into the YAML header too, like this:
+
+    date: "`r format(Sys.time(), '%B %d, %Y')`"
+
+What is this doing? Let's try running the code itself in the console. Then we'll add it above and re-render.
+
+One thing to keep in mind: while the R language itself is very flexible in how you format your code, that's not true with the YAML. It's a real stickler for everything being in exactly the right format for spacing, indentation, etc.
