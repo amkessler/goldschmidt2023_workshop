@@ -6,3 +6,7 @@ To install the R packages needed for the modules in this course, you can source 
 
 `install.packages(c("tidyverse", "lubridate", "janitor", "tidyquant", "writexl", "nycflights13", "readxl", 
   "RColorBrewer", "plotly", "tigris", "sf", "tmap", "tmaptools", "htmltools", "here", "shiny"))`
+
+The materials are also directly available in Posit Cloud here:
+https://posit.cloud/content/5497859
+
