@@ -21,7 +21,10 @@ library(tidyquant)
 
 To gather and analyze financial data, we'll explore using the `tidyquant` package - which allows us to directly download data on measures like stock prices as well as economic indicators from the Fed.
 
-Assign the stock ticker/symbol for the company we're interested in exploring.
+# Stock Data
+
+Let's see how we grab stock price data directly from the web and work with it.
+First we'll assign the stock ticker/symbol for the company we're interested in exploring.
 
 ```{r}
 
@@ -118,7 +121,6 @@ what the annual return was for our company's stock. We can do that like this:
 
 ```{r}
 
-# calculate monthly return of multiple stocks
 stock_data_from2000 %>%
   tq_transmute(select = close,
                mutate_fun = periodReturn,
@@ -142,6 +144,25 @@ stock_data_from2000 %>%
 
 ```
 
+Now keep in mind what we did above used the closing price of the stock. 
+But we might want to take into account dividends, stock splits, etc., which can affect
+as the stock's value. If we want to adjust for these things to achieve a potentially more accurate
+picture of the stock's returns over time, we can use the adjusted field in the data instead.
+
+```{r}
+
+stock_data_from2000 %>%
+  tq_transmute(select = adjusted,
+               mutate_fun = periodReturn,
+               period = "yearly",
+               col_rename = "annual_return")
+
+
+
+```
+
+## Visualizing 
+
 Want to visualize the returns? We can do that too, using the ggplot2 package augmented
 by tidyquant.
 
@@ -149,7 +170,7 @@ First let's make sure we've saved our annual return dataset as a new named objec
 
 ```{r}
 annualreturns_data <- stock_data_from2000 %>%
-  tq_transmute(select = close,
+  tq_transmute(select = adjusted,
                mutate_fun = periodReturn,
                period = "yearly", #here's the change
                col_rename = "annual_return")
@@ -180,7 +201,7 @@ How about we create a line chart of the stock's closing price over time. We can 
 
 ```{r}
 
-ggplot(stock_data, aes(x = date, y = close)) +
+ggplot(stock_data, aes(x = date, y = adjusted)) +
   geom_line()
 ```
 
@@ -188,7 +209,7 @@ If we wanted to add some labels...
 
 ```{r}
 stock_data %>%
-  ggplot(aes(x = date, y = close)) +
+  ggplot(aes(x = date, y = adjusted)) +
   geom_line() +
   labs(title = "Stock Price", y = "Closing Price", x = "")
 ```
@@ -239,7 +260,19 @@ stock_data %>%
 
 And remember once again, like we did earlier above, we could choose to look at weekly, monthly, or annual prices instead of daily.
 
-#### Multiple companies at once
+Also, note that above we're using a Simple Moving Average (SMA) for all of our analysis. But tidyquant also supports
+a range of other calculations, including:
+
+Exponential moving averages (EMA)
+Weighted moving averages (WMA)
+Double exponential moving averages (DEMA)
+Zero-lag exponential moving averages (ZLEMA)
+Volume-weighted moving averages (VWMA) 
+Elastic volume-weighted moving averages (EVWMA)
+
+
+
+## Multiple companies at once
 
 You may be asking, could I grab data on more than one company, so I can compare them? Indeed.
 ```{r}
@@ -280,28 +313,114 @@ Hmm, one of those is not like the other, right.
 What might some next steps be if we were going to follow our curiosity on this?
 Perhaps we could look at Exxon Mobil in the context of other competitors in the energy sector, etc.
 
+Also, we can actually pull an entire index's worth of companies at once. We'll look at that a little later.
+For now, let's shift to exploring economic indicator data we can capture.
 
-## FRED Economic Data
+<br>
 
-A wealth of economic data can be extracted from the Federal Reserve Economic Data (FRED) database. The FRED contains over 10K data sets that are free to use. See the FRED categories to narrow down the data base and to get data codes. 
+
+
+
+# FRED Economic Data
+
+A wealth of economic data can be extracted from the Federal Reserve Economic Data (FRED) database. FRED contains thousands of data sets that are free to use. See the FRED categories to narrow down the data base and to get data codes. 
 categories: https://fred.stlouisfed.org/categories
 
 Let's talk about them and FRED's vast richness of data for business reporting.
 
+## Examples
+
+US Regular All Formulations Gas Price (GASREGW), weekly
+
 ```{r}
-# US Regular All Formulations Gas Price (GASREGW), weekly
-gasprices_weekly <- tq_get("GASREGW", get = "economic.data", from = "2022-01-01")
-gasprices_weekly
+
+gasprices <- tq_get("GASREGW", get = "economic.data", from = "2022-01-01")
+
+gasprices
+
 ```
 
 ```{r}
-ggplot(gasprices_weekly, aes(x = date, y = price)) +
+gasprices %>% 
+  ggplot(aes(x = date, y = price)) +
   geom_line(color = "darkred") +
   theme_minimal()
 ```
 
+30 year mortgage rate average, weekly
+
 ```{r}
-# 30 year mortgage rate average, weekly
+
 mortgate_30yr_weekly <- tq_get("MORTGAGE30US", get = "economic.data", from = "2022-01-01")
 mortgate_30yr_weekly
 ```
+
+```{r}
+mortgate_30yr_weekly %>% 
+  ggplot(aes(x = date, y = price)) +
+  geom_line(color = "darkred") +
+  theme_minimal()
+```
+
+
+asdfsa
+
+
+```{r}
+
+
+
+
+```
+
+
+
+```{r}
+
+
+
+
+```
+
+
+
+```{r}
+
+
+
+
+```
+
+
+
+```{r}
+
+
+
+
+```
+
+
+
+```{r}
+
+
+
+
+```
+
+
+
+```{r}
+
+
+
+
+```
+
+
+
+
+
+
+
