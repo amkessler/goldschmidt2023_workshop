@@ -18,6 +18,8 @@ library(tidyverse)
 library(tidyquant)
 library(writexl)
 library(nycflights13)
+options(dplyr.summarise.inform = FALSE)
+options(scipen = 999)
 
 ```
 
