@@ -1,0 +1,52 @@
+series_id,state,rate_dec
+ALUR,Alabama,2.8
+AKUR,Alaska,4.3
+AZUR,Arizona,4
+ARUR,Arkansas,3.6
+CAUR,California,4.1
+COUR,Colorado,3.3
+CTUR,Connecticut,4.2
+DEUR,Delaware,4.4
+DCUR,District of Columbia,4.7
+FLUR,Florida,2.5
+GAUR,Georgia,3
+HIUR,Hawaii,3.2
+IDUR,Idaho,2.9
+ILUR,Illinois,4.7
+INUR,Indiana,3.1
+IAUR,Iowa,3.1
+KSUR,Kansas,2.9
+KYUR,Kentucky,4
+LAUR,Louisiana,3.5
+MEUR,Maine,3.8
+MDUR,Maryland,4
+MAUR,Massachusetts,3.3
+MIUR,Michigan,4.3
+MNUR,Minnesota,2.5
+MSUR,Mississippi,4
+MOUR,Missouri,2.8
+MTUR,Montana,2.8
+NEUR,Nebraska,2.6
+NVUR,Nevada,5.2
+NHUR,New Hampshire,2.7
+NJUR,New Jersey,3.4
+NMUR,New Mexico,3.9
+NYUR,New York,4.3
+NCUR,North Carolina,3.9
+NDUR,North Dakota,2.3
+OHUR,Ohio,4.2
+OKUR,Oklahoma,3.4
+ORUR,Oregon,4.5
+PAUR,Pennsylvania,3.9
+RIUR,Rhode Island,3.5
+SCUR,South Carolina,3.3
+SDUR,South Dakota,2.3
+TNUR,Tennessee,3.5
+TXUR,Texas,3.9
+UTUR,Utah,2.2
+VTUR,Vermont,2.6
+VAUR,Virginia,3
+WAUR,Washington,4.2
+WVUR,West Virginia,4.1
+WIUR,Wisconsin,3.2
+WYUR,Wyoming,3.7

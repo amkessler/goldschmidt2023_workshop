@@ -1,0 +1,317 @@
+---
+title: "Mapping using tmap in R"
+author: "Aaron Kessler"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+format:
+  html:
+    self-contained: true
+    toc: true
+    toc-location: left
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(tigris)
+library(sf)
+library(tmap)
+library(tmaptools)
+library(htmltools)
+library(janitor)
+library(here)
+options(tigris_class = "sf")
+options(dplyr.summarise.inform = FALSE)
+options(scipen = 999)
+
+
+```
+
+# Getting Geospatial Data Into R
+
+There are two primary ways to get geodata into R: through a saved file you import, or though a package that will help download it directly from the web.
+
+R can handle almost any type of GIS data, including shapefiles, geodatabases, geoJson, etc.
+We'll look at the SF package, one of the best packages for doing importing and processing data.
+
+What are "Simple Features" (SF)?
+The simple feature geodata format creates an object that behaves much like a dataframe in R, yet has spatial fields that contain the geographic information.
+This represents a big improvement over previous ways of handling geospatial data in R.
+
+You may see older references online to the SP package, which is the former way of doing geospatial work.
+If you're just starting out, you're much better off focusing your efforts on the SF package from the get-go.
+
+## Packages we'll be using
+
+There are a bunch of different R packages designed to work with geospatial data.
+We'll touch on a few of them here, primarily the tmap package, but there are many more.
+Even ggplot2 itself now has functions to help handle sf objects!
+
+Let's look as some actual code and examples to get started...
+
+# An Example: Plotting Points
+
+We'll use the tigris package to pull census boundary geo data into our session, for a state map of the US.
+
+Note that at the end we'll discuss strategies for handling Alaska, Hawaii and Puerto Rico - for now we'll take them out for expediency's sake in the example below.
+
+The tigris package is a wonderful resource for all kinds of boundary files several options for resolution - when using whole nation, 20m is usually better for individual states 5m may be preferable.
+
+By setting options(tigris_class = "sf") at the top, we've told tigris we want simple feature objects returned.
+
+```{r, include=FALSE}
+states_geo <- tigris::states(resolution = "20m", cb = TRUE)
+# let's take a look as what we have
+states_geo
+```
+
+Looks a lot like a dataframe right?
+
+Note the "geometry" field.
+Also take note of the CRS, which stands for coordinate reference system; we'll come back to that shortly.
+
+Ok, it's nice I have this GIS data, how do I actually see anything?
+How do I map it out?
+
+This is where you have many different options.
+But we're going to start by using the powerful tmap package.
+Keep in mind tmap uses the + sign not the pipe, similar ggplot2.
+
+Watch how simple it is to get something initial up to see:
+
+```{r}
+
+tm_shape(states_geo) + 
+  tm_polygons()
+
+```
+
+What just happened there?
+Let's discuss.
+
+I said for now we'll focus on the lower 48, how can we do that?
+Well you can filter sf objects much like you can a regular dataframe/tibble.
+
+First, let's start with just getting rid of U.S. territories, and just keep states, since this is something you'll find yourself doing quite frequently.
+
+Tigris also comes with a handle fips code table built in.
+All we have to do is reference it and can utilize its goodness.
+
+```{r}
+
+head(fips_codes)
+
+```
+
+This can be a great tool to help get down to just U.S. states and DC.
+
+```{r}
+
+vector_continentalus <- fips_codes %>% 
+  distinct(state) %>% 
+  filter(!state %in% c("AK", "HI", "PR", "AS", "GU", "MP", "UM", "VI")) %>% 
+  pull(state)
+
+```
+
+Now we'll filter using our vector, must like we would a normal dataframe.
+
+```{r}
+
+states_geo <- states_geo %>% 
+  filter(STUSPS %in% vector_continentalus)
+
+```
+
+Did it work?
+Let's see how many rows we have now.
+
+```{r}
+
+states_geo %>%
+  nrow()
+
+```
+
+Let's map things out now to see what we have.
+
+```{r}
+
+tm_shape(states_geo) + 
+  tm_polygons()
+
+```
+
+Bingo.
+
+tm_polygons also takes some other arguments, including assigning an ID.
+
+One of the powerful arguments is to symbolize the data based on a certain column.
+All you have to do is feed in the name of the column you want to use to visualize by.
+
+```{r}
+
+tm_shape(states_geo) +
+  tm_polygons("ALAND", id = "GEOID") #here we feed in the land area, ALAND
+
+```
+
+Generate it again but this time adding labels.
+
+```{r}
+
+tm_shape(states_geo) +
+  tm_polygons("ALAND", id = "GEOID") +
+  tm_text("STUSPS", size = .5) #this line adds the labels
+
+# there are numerous parameters and customizations you can do
+```
+
+Let's add some cities as points.
+
+```{r}
+cities <- read_csv("data/cities_with_coordinates.csv")
+
+cities
+```
+
+Now we can create a geospatial object using the coordinates.
+
+```{r}
+
+cities_geo <- st_as_sf(cities, coords = c("lon", "lat"), crs = 4269)
+
+#ensure crs consistency
+cities_geo <- st_transform(cities_geo, st_crs(states_geo))
+
+```
+
+Great, now let's map our new point layer on top of the base map.
+
+```{r}
+
+tm_shape(states_geo) + 
+  tm_polygons() +
+  tm_shape(cities_geo) + 
+  tm_dots()
+```
+
+They're on there!   
+Little hard to see though, let's fiddle with the size and color.
+
+```{r}
+
+tm_shape(states_geo) + tm_polygons() +
+  tm_shape(cities_geo) + tm_dots(col = "red", size = 1)
+```
+
+We can actually save our tmap as its own object as well.
+```{r}
+
+mymap <- tm_shape(states_geo) + tm_polygons() +
+  tm_shape(cities_geo) + tm_dots(col = "red", size = 0.1)
+
+mymap
+
+```
+
+We can either use the "export" button directly from the viewer to save as pdf...  
+...or do it using the following code:
+```{r}
+
+tmap_save(mymap, here("mymap.pdf"))
+```
+
+Wish your tmap was interactive instead of static? 
+
+While it doesn't have the same level of specific customization as using the leaflet package directly (example of that later on), you can actually turn your map object in tmap into a leaflet map by running a single line of code: setting the tmap_mode().
+ 
+```{r}
+# let's take a look
+tmap_mode(mode = "view")
+
+# what's what happens
+mymap
+```
+
+you can also use the tmap_leaflet() function to convert to a leaflet object and 
+further customize using the leaflet's own methods
+
+want to go back to static?
+```{r}
+
+tmap_mode(mode = "plot")
+
+mymap
+
+```
+
+Nice.  
+
+No
+```{r}
+
+unemployment_dec <- read_csv("data/2022DecemberUnemploymentRatebyState.csv")
+
+unemployment_dec
+
+```
+
+
+
+```{r}
+
+states_geo_with_umemploy <- left_join(states_geo, unemployment_dec, by = c("NAME" = "state"))
+
+
+```
+
+
+
+```{r}
+
+map_unemploy <- tm_shape(states_geo_with_umemploy) +
+  tm_polygons("rate_dec", id = "rate_dec") +
+  tm_text("STUSPS", size = .5) #this line adds the labels
+
+map_unemploy
+
+```
+
+
+
+```{r}
+
+tmap_mode(mode = "view")
+
+map_unemploy
+```
+
+Add titles, etc.
+
+```{r}
+
+tmap_mode(mode = "plot")
+
+map_unemploy +
+  tm_layout(main.title = "December Unemployment Rate By State",
+            main.title.position = "center",
+            main.title.color = "black",
+            main.title.size = 1.2)
+```
+
+Now we can export it.
+
+```{r}
+
+mapforsaving <- map_unemploy +
+  tm_layout(main.title = "December Unemployment Rate By State",
+            main.title.position = "center",
+            main.title.color = "black",
+            main.title.size = 1.2)
+
+
+tmap_save(mapforsaving, here("unemployment_by_state_dec2022.pdf"))
+
+```
+
