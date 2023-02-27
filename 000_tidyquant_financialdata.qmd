@@ -195,30 +195,68 @@ stock_data %>%
 Now once again, we have some very helpful financial measures built in to tidyquant.
 Let's say we'd like to smooth things out here a bit, and calculate a moving average?
 The `geom_ma()` function delivers it for us.
+
 ```{r}
 # simple moving averages
 
-aapl_prices %>%
+stock_data %>%
   ggplot(aes(x = date, y = close)) +
   geom_line() +
-  labs(title = "Apple Stock Price", y = "Closing Price", x = "") +
-  geom_ma(ma_fun = SMA, n = 50, color = "red", size = 1.25) +
+  labs(title = "Stock Price", y = "Closing Price", x = "") +
+  geom_ma(ma_fun = SMA, n = 50, color = "red", linewidth = 1.25) +
   theme_minimal()
 ```
 
+
+Want a 30-day moving average instead? Well you just have make one tiny tweak.
+
 ```{r}
-### multiple companies
+
+stock_data %>%
+  ggplot(aes(x = date, y = close)) +
+  geom_line() +
+  labs(title = "Stock Price", y = "Closing Price", x = "") +
+  geom_ma(ma_fun = SMA, n = 30, color = "red", linewidth = 1.25) + #can you spot the change in this line?
+  theme_minimal()
+
+```
+
+Maybe you'd acutally like to have both at the same time? No problem.
+We'll distinguish the colors and line design type here to make it easier to see.
 
 
-#with only a start and no end date
+```{r}
+
+stock_data %>%
+  ggplot(aes(x = date, y = close)) +
+  geom_line() +
+  labs(title = "Stock Price", y = "Closing Price", x = "") +
+  geom_ma(ma_fun = SMA, n = 30, color = "blue", linewidth = 1.25, linetype = "dotted") + 
+  geom_ma(ma_fun = SMA, n = 50, color = "red", linewidth = 1.25) + 
+  theme_minimal()
+
+```
+
+And remember once again, like we did earlier above, we could choose to look at weekly, monthly, or annual prices instead of daily.
+
+#### Multiple companies at once
+
+You may be asking, could I grab data on more than one company, so I can compare them? Indeed.
+```{r}
 mycompanies  <- tq_get(c("AAPL", "MSFT", "NYT", "XOM"), 
                        get = "stock.prices", 
                        from = "2022-01-01")
-mycompanies 
+mycompanies
+```
 
+
+```{r}
 mycompanies %>% 
   count(symbol)
 ```
+
+Now we'll chart those out to compare, using almost identical code as above,
+but with some changes to allow small-multiple charts using `facet_wrap()`.
 
 ```{r}
 mycompanies %>%
@@ -227,9 +265,8 @@ mycompanies %>%
   labs(title = "", y = "Closing Price", x = "") +
   facet_wrap(~ symbol, ncol = 2, scale = "free_y")
 ```
-
+Want to add that moving average again? Can do that, too.
 ```{r}
-# simple moving averages
 
 mycompanies %>%
   ggplot(aes(x = date, y = close)) +
@@ -239,12 +276,17 @@ mycompanies %>%
   facet_wrap(~ symbol, ncol = 2, scale = "free_y") +
   theme_minimal()
 ```
+Hmm, one of those is not like the other, right. 
+What might some next steps be if we were going to follow our curiosity on this?
+Perhaps we could look at Exxon Mobil in the context of other competitors in the energy sector, etc.
 
-```{r}
-# FRED Economic Data
-# A wealth of economic data can be extracted from the Federal Reserve Economic Data (FRED) database. The FRED contains over 10K data sets that are free to use. See the FRED categories to narrow down the data base and to get data codes. 
-# categories: https://fred.stlouisfed.org/categories
-```
+
+## FRED Economic Data
+
+A wealth of economic data can be extracted from the Federal Reserve Economic Data (FRED) database. The FRED contains over 10K data sets that are free to use. See the FRED categories to narrow down the data base and to get data codes. 
+categories: https://fred.stlouisfed.org/categories
+
+Let's talk about them and FRED's vast richness of data for business reporting.
 
 ```{r}
 # US Regular All Formulations Gas Price (GASREGW), weekly
