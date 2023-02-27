@@ -178,7 +178,7 @@ netflows_by_zip_withagi <- net_flows_usps_zips_NYC %>%
 zip_layer <- function(plot_obj, zip_name) {
   plot_obj %>%
     filter(zipcode == zip_name) %>%
-    add_lines(name = zip_name)
+    add_lines(name = zip_name, color = "orange")
 }
 
 all_zips_plotlychart %>% 
@@ -263,9 +263,14 @@ Here for this example we'll just grab a sample of the companies, but you could g
 ```{r}
 
 stocks <- tq_index("DOW") %>%
-    slice(1:50) %>%
     tq_get(get = "stock.prices",
            from = "2020-01-01")
+
+#you can also pull just a certain number of stocks instead of all
+# stocks <- tq_index("DOW") %>%
+#     slice(1:5) %>%
+#     tq_get(get = "stock.prices",
+#            from = "2020-01-01")
 
 
 stocks %>%
@@ -365,40 +370,6 @@ monthlyreturns_plotlychart %>%
   add_fun(stock_layer, stock_symbol = "BA")
 ```
 
-Where might we go with a story from there, about Boeing's swings in performance...
-
-
-
-```{r}
-
-
-
-```
-
-
-
-
-
-```{r}
-
-
-
-```
-
-
-
-
-
-```{r}
-
-
-
-```
-
-
-
-
-
-
+Where might we go with a business story from there, about Boeing's swings in performance compared with other companies in the Dow Jones index...
 
 
