@@ -2,4 +2,4 @@
 ### used in this workshop
 
 install.packages(c("tidyverse", "lubridate", "janitor", "tidyquant", "writexl", "nycflights13", "readxl", 
-  "RColorBrewer", "plotly", "tigris", "sf", "tmap", "tmaptools", "htmltools", "here"))
+  "RColorBrewer", "plotly", "tigris", "sf", "tmap", "tmaptools", "htmltools", "here", "shiny"))

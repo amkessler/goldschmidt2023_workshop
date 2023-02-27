@@ -5,4 +5,4 @@ This repository contains materials for the session on analyzing and visualizing 
 To install the R packages needed for the modules in this course, you can source the file `load_packages.R`, or run the following line of code in the console:
 
 `install.packages(c("tidyverse", "lubridate", "janitor", "tidyquant", "writexl", "nycflights13", "readxl", 
-  "RColorBrewer", "plotly", "tigris", "sf", "tmap", "tmaptools", "htmltools", "here"))`
+  "RColorBrewer", "plotly", "tigris", "sf", "tmap", "tmaptools", "htmltools", "here", "shiny"))`
