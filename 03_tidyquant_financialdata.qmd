@@ -23,6 +23,8 @@ To gather and analyze financial data, we'll explore using the `tidyquant` packag
 
 # Stock Data
 
+## Analyzing a company
+
 Let's see how we grab stock price data directly from the web and work with it. First we'll assign the stock ticker/symbol for the company we're interested in exploring.
 
 ```{r}
